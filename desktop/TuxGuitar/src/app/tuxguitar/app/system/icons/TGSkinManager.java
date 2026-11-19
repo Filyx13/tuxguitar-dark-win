@@ -3,6 +3,7 @@ package app.tuxguitar.app.system.icons;
 import app.tuxguitar.app.system.config.TGConfigDefaults;
 import app.tuxguitar.app.system.config.TGConfigKeys;
 import app.tuxguitar.app.system.config.TGConfigManager;
+import app.tuxguitar.app.ui.TGApplication;
 import app.tuxguitar.event.TGEventListener;
 import app.tuxguitar.event.TGEventManager;
 import app.tuxguitar.util.TGContext;
@@ -42,6 +43,15 @@ public class TGSkinManager {
 
 	public void loadSkin() {
 		this.currentSkin = this.getCurrentSkin();
+		this.applySkinTheme();
+	}
+
+	public boolean isDarkSkin() {
+		return (this.currentSkin != null && this.currentSkin.toLowerCase().endsWith(SUFFIX_DARK));
+	}
+
+	public void applySkinTheme() {
+		TGApplication.getInstance(this.context).getAppearance().setDarkMode(this.isDarkSkin());
 	}
 
 	public void reloadSkin() {

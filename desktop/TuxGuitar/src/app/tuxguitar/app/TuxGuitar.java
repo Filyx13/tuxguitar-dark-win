@@ -122,6 +122,7 @@ public class TuxGuitar {
 		app.start(new Runnable() {
 			public void run() {
 				// display splash screen
+				TGSkinManager.getInstance(TuxGuitar.this.context).applySkinTheme();
 				TGSplash.getInstance(TuxGuitar.this.context).init();
 
 				TGSynchronizer.getInstance(TuxGuitar.this.context).executeLater(new Runnable() {

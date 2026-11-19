@@ -340,6 +340,11 @@
 								<copy todir="${project.build.directory}/${project.finalName}/doc" overwrite="true">
 									<fileset dir="${project.rootPath}/../docs/" />
 								</copy>
+								<unzip src="${project.build.directory}/${project.finalName}/lib/swt.jar" dest="${project.build.directory}/${project.finalName}/lib">
+									<patternset>
+										<include name="*.dll" />
+									</patternset>
+								</unzip>
 								<copy todir="${project.build.directory}/${project.finalName}/dist" overwrite="true">
 									<fileset dir="${project.rootPath}/TuxGuitar/dist/" />
 								</copy>

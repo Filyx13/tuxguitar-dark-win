@@ -28,6 +28,7 @@ import app.tuxguitar.ui.resource.UICursor;
 import app.tuxguitar.ui.resource.UIFont;
 import app.tuxguitar.ui.resource.UIRectangle;
 import app.tuxguitar.ui.resource.UISize;
+import app.tuxguitar.ui.swt.SWTEnvironment;
 import app.tuxguitar.ui.swt.event.SWTDisposeListenerManager;
 import app.tuxguitar.ui.swt.event.SWTFocusListenerManager;
 import app.tuxguitar.ui.swt.event.SWTKeyListenerManager;
@@ -61,6 +62,8 @@ public abstract class SWTControl<T extends Control> extends SWTEventReceiver<T> 
 	protected UISize packedSize;
 	private UIColor bgColor;
 	private UIColor fgColor;
+	private boolean customBgColor;
+	private boolean customFgColor;
 	private UIFont font;
 	private UICursor cursor;
 	private UIPopupMenu popupMenu;
@@ -83,6 +86,11 @@ public abstract class SWTControl<T extends Control> extends SWTEventReceiver<T> 
 		this.mouseTrackListener = new SWTMouseTrackListenerManager(this);
 		this.focusListener = new SWTFocusListenerManager(this);
 		this.zoomListener = new SWTZoomListenerManager(this);
+
+		this.getControl().setData(SWTControl.class.getName(), this);
+		if( SWTEnvironment.getInstance().getAppearance() != null ) {
+			SWTEnvironment.getInstance().getAppearance().applyControlTheme(this.getControl());
+		}
 	}
 
 	public UIControl getParent() {
@@ -162,28 +170,44 @@ public abstract class SWTControl<T extends Control> extends SWTEventReceiver<T> 
 		return (handle != null ? new SWTColor(handle) : null);
 	}
 
+	public boolean hasCustomBgColor() {
+		return this.customBgColor;
+	}
+
+	public boolean hasCustomFgColor() {
+		return this.customFgColor;
+	}
+
 	public UIColor getBgColor() {
-		if( this.bgColor == null ) {
-			this.bgColor = this.getColor(this.getControl().getBackground());
+		if( this.bgColor != null ) {
+			return this.bgColor;
 		}
-		return this.bgColor;
+		return this.getColor(this.getControl().getBackground());
 	}
 
 	public void setBgColor(UIColor color) {
 		this.bgColor = color;
+		this.customBgColor = (color != null);
 		this.getControl().setBackground(this.bgColor != null ? ((SWTColor) this.bgColor).getHandle() : null);
+		if( !this.customBgColor && SWTEnvironment.getInstance().getAppearance() != null ) {
+			SWTEnvironment.getInstance().getAppearance().applyControlTheme(this.getControl());
+		}
 	}
 
 	public UIColor getFgColor() {
-		if( this.fgColor == null ) {
-			this.fgColor = this.getColor(this.getControl().getForeground());
+		if( this.fgColor != null ) {
+			return this.fgColor;
 		}
-		return this.fgColor;
+		return this.getColor(this.getControl().getForeground());
 	}
 
 	public void setFgColor(UIColor color) {
 		this.fgColor = color;
+		this.customFgColor = (color != null);
 		this.getControl().setForeground(this.fgColor != null ? ((SWTColor) this.fgColor).getHandle() : null);
+		if( !this.customFgColor && SWTEnvironment.getInstance().getAppearance() != null ) {
+			SWTEnvironment.getInstance().getAppearance().applyControlTheme(this.getControl());
+		}
 	}
 
 	public UIFont getFont(Font handle) {

@@ -57,7 +57,11 @@ public class TGColorManager {
 	}
 
 	public void appendSkinnableColor(TGSkinnableColor skinnableColor, TGProperties skinProperties) {
-		if(!this.skinnableColors.contains(skinnableColor)) {
+		int index = this.skinnableColors.indexOf(skinnableColor);
+		if( index >= 0 ) {
+			this.skinnableColors.set(index, skinnableColor);
+			this.updateSkinnableColor(skinnableColor, skinProperties);
+		} else if(!this.skinnableColors.contains(skinnableColor)) {
 			this.skinnableColors.add(skinnableColor);
 			this.updateSkinnableColor(skinnableColor, skinProperties);
 		}

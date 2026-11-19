@@ -19,6 +19,7 @@ import app.tuxguitar.ui.resource.UIImage;
 import app.tuxguitar.ui.resource.UIRectangle;
 import app.tuxguitar.ui.toolbar.UIToolBar;
 import app.tuxguitar.ui.widget.UICanvas;
+import app.tuxguitar.ui.widget.UICheckBox;
 import app.tuxguitar.ui.widget.UIDropDownSelect;
 import app.tuxguitar.ui.widget.UILabel;
 import app.tuxguitar.ui.widget.UILayoutContainer;
@@ -36,6 +37,7 @@ public class SkinOption extends TGSettingsOption{
 	private boolean initialized;
 	private List<SkinInfo> skins;
 	private UIDropDownSelect<SkinInfo> combo;
+	private UICheckBox darkScoreCheckBox;
 	private UILabel nameLabel;
 	private UILabel authorLabel;
 	private UILabel versionLabel;
@@ -65,6 +67,15 @@ public class SkinOption extends TGSettingsOption{
 
 		this.combo = uiFactory.createDropDownSelect(composite);
 		compositeLayout.set(this.combo, 1, 1, UITableLayout.ALIGN_FILL, UITableLayout.ALIGN_FILL, true, true);
+
+		this.darkScoreCheckBox = uiFactory.createCheckBox(composite);
+		this.darkScoreCheckBox.setText(TuxGuitar.getProperty("settings.config.styles.dark-score"));
+		this.darkScoreCheckBox.addSelectionListener(new UISelectionListener() {
+			public void onSelect(UISelectionEvent event) {
+				getViewContext().setAttribute(TGConfigKeys.STYLE_DARK_SCORE, Boolean.valueOf(SkinOption.this.darkScoreCheckBox.isSelected()));
+			}
+		});
+		compositeLayout.set(this.darkScoreCheckBox, 2, 1, UITableLayout.ALIGN_FILL, UITableLayout.ALIGN_FILL, true, true);
 
 		UITableLayout skinInfoLayout = new UITableLayout();
 		skinInfoComposite = uiFactory.createPanel(getPanel(), false);
@@ -106,6 +117,7 @@ public class SkinOption extends TGSettingsOption{
 	public void loadConfig(){
 		new Thread(new Runnable() {
 			public void run() {
+				final boolean darkScore = Boolean.TRUE.equals(getConfig().getBooleanValue(TGConfigKeys.STYLE_DARK_SCORE));
 				SkinOption.this.skins = new ArrayList<SkinInfo>();
 				String[] skinNames = TGFileUtils.getFileNames(getViewContext().getContext(), "skins");
 				if( skinNames != null ){
@@ -137,6 +149,9 @@ public class SkinOption extends TGSettingsOption{
 								}
 							});
 
+							SkinOption.this.darkScoreCheckBox.setSelected(darkScore);
+							getViewContext().setAttribute(TGConfigKeys.STYLE_DARK_SCORE, Boolean.valueOf(darkScore));
+
 							SkinOption.this.showSkinInfo();
 							SkinOption.this.initialized = true;
 							SkinOption.this.pack();
@@ -145,6 +160,17 @@ public class SkinOption extends TGSettingsOption{
 				});
 			}
 		}).start();
+	}
+
+	@Override
+	public void setVisible(boolean visible) {
+		super.setVisible(visible);
+		if (visible && this.initialized && this.darkScoreCheckBox != null && !this.darkScoreCheckBox.isDisposed()) {
+			Boolean sharedDarkScore = getViewContext().getAttribute(TGConfigKeys.STYLE_DARK_SCORE);
+			if (sharedDarkScore != null) {
+				this.darkScoreCheckBox.setSelected(sharedDarkScore.booleanValue());
+			}
+		}
 	}
 
 	public void showSkinInfo() {
@@ -186,12 +212,16 @@ public class SkinOption extends TGSettingsOption{
 			if( skinInfo != null ){
 				getConfig().setValue(TGConfigKeys.SKIN, skinInfo.getSkin());
 			}
+			Boolean sharedDarkScore = getViewContext().getAttribute(TGConfigKeys.STYLE_DARK_SCORE);
+			boolean darkScore = (sharedDarkScore != null ? sharedDarkScore.booleanValue() : this.darkScoreCheckBox.isSelected());
+			getConfig().setValue(TGConfigKeys.STYLE_DARK_SCORE, darkScore);
 		}
 	}
 
 	public void updateDefaults(){
 		if(this.initialized){
 			getConfig().setValue(TGConfigKeys.SKIN, getDefaults().getValue(TGConfigKeys.SKIN));
+			getConfig().setValue(TGConfigKeys.STYLE_DARK_SCORE, getDefaults().getValue(TGConfigKeys.STYLE_DARK_SCORE));
 		}
 	}
 

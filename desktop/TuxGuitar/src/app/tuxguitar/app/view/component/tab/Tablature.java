@@ -26,6 +26,7 @@ import app.tuxguitar.song.models.TGMeasure;
 import app.tuxguitar.song.models.TGMeasureHeader;
 import app.tuxguitar.song.models.TGNote;
 import app.tuxguitar.song.models.TGSong;
+import app.tuxguitar.ui.resource.UIColorModel;
 import app.tuxguitar.ui.resource.UIPainter;
 import app.tuxguitar.ui.resource.UIRectangle;
 import app.tuxguitar.ui.resource.UIResourceFactory;
@@ -201,9 +202,16 @@ public class Tablature implements TGController {
 	public void loadCaretStyles() {
 		TGConfigManager config = TGConfigManager.getInstance(this.context);
 
-		getCaret().setColorCurrentVoice(config.getColorModelConfigValue(TGConfigKeys.COLOR_CARET_CURRENT_VOICE));
-		getCaret().setColorOtherVoice(config.getColorModelConfigValue(TGConfigKeys.COLOR_CARET_OTHER_VOICE));
-		getCaret().setAlpha(config.getIntegerValue(TGConfigKeys.COLOR_CARET_ALPHA));
+		boolean darkScore = Boolean.TRUE.equals(config.getBooleanValue(TGConfigKeys.STYLE_DARK_SCORE));
+		if (darkScore) {
+			getCaret().setColorCurrentVoice(new UIColorModel(235, 238, 242));
+			getCaret().setColorOtherVoice(config.getColorModelConfigValue(TGConfigKeys.COLOR_CARET_OTHER_VOICE));
+			getCaret().setAlpha(35);
+		} else {
+			getCaret().setColorCurrentVoice(config.getColorModelConfigValue(TGConfigKeys.COLOR_CARET_CURRENT_VOICE));
+			getCaret().setColorOtherVoice(config.getColorModelConfigValue(TGConfigKeys.COLOR_CARET_OTHER_VOICE));
+			getCaret().setAlpha(config.getIntegerValue(TGConfigKeys.COLOR_CARET_ALPHA));
+		}
 	}
 
 	public void scale(Float scale) {

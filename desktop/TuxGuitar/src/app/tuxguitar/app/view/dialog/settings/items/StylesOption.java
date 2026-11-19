@@ -18,6 +18,7 @@ import app.tuxguitar.ui.resource.UIColorModel;
 import app.tuxguitar.ui.resource.UIFontModel;
 import app.tuxguitar.ui.toolbar.UIToolBar;
 import app.tuxguitar.ui.widget.UIButton;
+import app.tuxguitar.ui.widget.UICheckBox;
 import app.tuxguitar.ui.widget.UIContainer;
 import app.tuxguitar.ui.widget.UIControl;
 import app.tuxguitar.ui.widget.UILayoutContainer;
@@ -57,6 +58,7 @@ public class StylesOption extends TGSettingsOption {
 	private UIColorButton playMeasureColorButton;
 	private UIColorButton selectionColorButton;
 	private UIColorButton linesColorButton;
+	private UICheckBox darkScoreCheckBox;
 
 	public StylesOption(TGSettingsEditor configEditor, UIToolBar toolBar, UILayoutContainer parent){
 		super(configEditor,toolBar,parent,TuxGuitar.getProperty("settings.config.styles"));
@@ -82,8 +84,9 @@ public class StylesOption extends TGSettingsOption {
 		//=================================================== EDITOR STYLES ===================================================//
 		showLabel(getPanel(), TuxGuitar.getProperty("settings.config.styles.general"), true, 1, 1);
 
+		UITableLayout mainSectionLayout = new UITableLayout();
 		UIPanel mainSection = uiFactory.createPanel(getPanel(), false);
-		mainSection.setLayout(new UITableLayout());
+		mainSection.setLayout(mainSectionLayout);
 		this.indent(mainSection, 2, 1);
 
 		showLabel(mainSection, TuxGuitar.getProperty("settings.config.styles.font.default") + ":", false, 1, 1);
@@ -119,6 +122,15 @@ public class StylesOption extends TGSettingsOption {
 		showLabel(mainSection, TuxGuitar.getProperty("settings.config.styles.color.lines") + ":", false, 11, 1);
 		this.linesColorButton = this.createColorButton(mainSection, TuxGuitar.getProperty("choose"), 11, 2);
 
+		this.darkScoreCheckBox = uiFactory.createCheckBox(mainSection);
+		this.darkScoreCheckBox.setText(TuxGuitar.getProperty("settings.config.styles.dark-score"));
+		this.darkScoreCheckBox.addSelectionListener(new UISelectionListener() {
+			public void onSelect(UISelectionEvent event) {
+				getViewContext().setAttribute(TGConfigKeys.STYLE_DARK_SCORE, Boolean.valueOf(StylesOption.this.darkScoreCheckBox.isSelected()));
+			}
+		});
+		mainSectionLayout.set(this.darkScoreCheckBox, 12, 1, UITableLayout.ALIGN_FILL, UITableLayout.ALIGN_CENTER, true, true, 1, 2, null, null, null);
+
 		//=================================================== PRINTER STYLES ===================================================//
 		showLabel(getPanel(), TuxGuitar.getProperty("settings.config.styles.printer"), true, 3, 1);
 
@@ -139,6 +151,17 @@ public class StylesOption extends TGSettingsOption {
 		this.printerTextFontButton = this.createFontButton(printerSection, this.printerTextFontData, 4, 2);
 
 		this.loadConfig();
+	}
+
+	@Override
+	public void setVisible(boolean visible) {
+		super.setVisible(visible);
+		if (visible && this.initialized && this.darkScoreCheckBox != null && !this.darkScoreCheckBox.isDisposed()) {
+			Boolean sharedDarkScore = getViewContext().getAttribute(TGConfigKeys.STYLE_DARK_SCORE);
+			if (sharedDarkScore != null) {
+				this.darkScoreCheckBox.setSelected(sharedDarkScore.booleanValue());
+			}
+		}
 	}
 
 	public UIColorButton createColorButton(UILayoutContainer parent, String text, int row, int col) {
@@ -229,6 +252,7 @@ public class StylesOption extends TGSettingsOption {
 				final UIColorModel playMeasureRGB  = getConfig().getColorModelConfigValue(TGConfigKeys.COLOR_BACKGROUND_PLAYING);
 				final UIColorModel selectionRGB  = getConfig().getColorModelConfigValue(TGConfigKeys.COLOR_SELECTION);
 				final UIColorModel linesRGB  = getConfig().getColorModelConfigValue(TGConfigKeys.COLOR_LINE);
+				final boolean darkScore = Boolean.TRUE.equals(getConfig().getBooleanValue(TGConfigKeys.STYLE_DARK_SCORE));
 				TGSynchronizer.getInstance(getViewContext().getContext()).executeLater(new Runnable() {
 					public void run() {
 						if(!isDisposed()){
@@ -247,6 +271,8 @@ public class StylesOption extends TGSettingsOption {
 							StylesOption.this.playMeasureColorButton.loadColor(playMeasureRGB);
 							StylesOption.this.selectionColorButton.loadColor(selectionRGB);
 							StylesOption.this.linesColorButton.loadColor(linesRGB);
+							StylesOption.this.darkScoreCheckBox.setSelected(darkScore);
+							getViewContext().setAttribute(TGConfigKeys.STYLE_DARK_SCORE, Boolean.valueOf(darkScore));
 							StylesOption.this.initialized = true;
 							StylesOption.this.pack();
 						}
@@ -273,6 +299,9 @@ public class StylesOption extends TGSettingsOption {
 			getConfig().setValue(TGConfigKeys.COLOR_BACKGROUND_PLAYING,this.playMeasureColorButton.getValue());
 			getConfig().setValue(TGConfigKeys.COLOR_SELECTION,this.selectionColorButton.getValue());
 			getConfig().setValue(TGConfigKeys.COLOR_LINE,this.linesColorButton.getValue());
+			Boolean sharedDarkScore = getViewContext().getAttribute(TGConfigKeys.STYLE_DARK_SCORE);
+			boolean darkScore = (sharedDarkScore != null ? sharedDarkScore.booleanValue() : this.darkScoreCheckBox.isSelected());
+			getConfig().setValue(TGConfigKeys.STYLE_DARK_SCORE, darkScore);
 		}
 	}
 
@@ -293,6 +322,7 @@ public class StylesOption extends TGSettingsOption {
 			getConfig().setValue(TGConfigKeys.COLOR_BACKGROUND_PLAYING, getDefaults().getValue(TGConfigKeys.COLOR_BACKGROUND_PLAYING));
 			getConfig().setValue(TGConfigKeys.COLOR_SELECTION, getDefaults().getValue(TGConfigKeys.COLOR_SELECTION));
 			getConfig().setValue(TGConfigKeys.COLOR_LINE, getDefaults().getValue(TGConfigKeys.COLOR_LINE));
+			getConfig().setValue(TGConfigKeys.STYLE_DARK_SCORE, getDefaults().getValue(TGConfigKeys.STYLE_DARK_SCORE));
 		}
 	}
 

@@ -171,6 +171,8 @@ public class TGTableViewer implements TGEventListener {
 	}
 
 	public void loadIcons() {
+		this.colorModel.resetColors(this.context);
+		this.selectedTrack = 0;
 		this.loadMenuIcons();
 		int rows = this.table.getRowCount();
 		for(int i = 0; i < rows; i ++){
@@ -178,6 +180,7 @@ public class TGTableViewer implements TGEventListener {
 			row.getSoloMute().loadIcons();
 		}
 		this.table.getColumnCanvas().loadIcons();
+		this.redraw();
 	}
 
 	public void fireUpdate(boolean newSong){
@@ -515,6 +518,7 @@ public class TGTableViewer implements TGEventListener {
 	public void loadConfig() {
 		this.autoSizeEnabled = TuxGuitar.getInstance().getConfig().getBooleanValue(TGConfigKeys.TABLE_AUTO_SIZE);
 		this.colorModel.resetColors(this.context);
+		this.selectedTrack = 0;
 		this.trackCount = 0;
 	}
 

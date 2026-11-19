@@ -17,8 +17,9 @@ public class SWTApplication extends SWTComponent<Display> implements UIApplicati
 	public SWTApplication(String name) {
 		super(createDisplay(name));
 
-		this.factory = new SWTFactory(this.getControl());
 		this.appearance = new SWTAppearance(this.getDisplay());
+		SWTEnvironment.getInstance().start(this.getDisplay(), (SWTAppearance) this.appearance);
+		this.factory = new SWTFactory(this.getControl());
 	}
 
 	public void dispose() {
@@ -56,7 +57,7 @@ public class SWTApplication extends SWTComponent<Display> implements UIApplicati
 	}
 
 	public void start(Runnable runnable) {
-		SWTEnvironment.getInstance().start(this.getDisplay());
+		SWTEnvironment.getInstance().start(this.getDisplay(), (SWTAppearance) this.appearance);
 
 		this.runInUiThread(runnable);
 

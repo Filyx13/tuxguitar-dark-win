@@ -18,7 +18,7 @@ public class SWTBackgroundPainter implements PaintListener {
 	}
 
 	public void update() {
-		UIColor color = this.control.getBgColor();
+		UIColor color = (this.control.hasCustomBgColor() ? this.control.getBgColor() : null);
 
 		if(!this.listening && color != null) {
 			this.control.getControl().addPaintListener(this);
@@ -31,7 +31,7 @@ public class SWTBackgroundPainter implements PaintListener {
 	}
 
 	public void paintControl(PaintEvent e) {
-		UIColor color = this.control.getBgColor();
+		UIColor color = (this.control.hasCustomBgColor() ? this.control.getBgColor() : null);
 
 		if( color != null && !color.isDisposed()) {
 			UISize size = this.control.getBounds().getSize();

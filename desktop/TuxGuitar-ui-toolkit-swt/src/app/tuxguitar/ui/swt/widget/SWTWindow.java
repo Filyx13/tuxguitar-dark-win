@@ -10,6 +10,7 @@ import app.tuxguitar.ui.event.UICloseListener;
 import app.tuxguitar.ui.menu.UIMenuBar;
 import app.tuxguitar.ui.resource.UIImage;
 import app.tuxguitar.ui.resource.UIRectangle;
+import app.tuxguitar.ui.swt.SWTEnvironment;
 import app.tuxguitar.ui.swt.event.SWTCloseListenerManager;
 import app.tuxguitar.ui.swt.menu.SWTMenu;
 import app.tuxguitar.ui.swt.resource.SWTImage;
@@ -63,9 +64,15 @@ public class SWTWindow extends SWTLayoutContainer<Shell> implements UIWindow {
 	public void setMenuBar(UIMenuBar menuBar) {
 		this.menuBar = menuBar;
 		this.getControl().setMenuBar(this.menuBar != null ? ((SWTMenu) this.menuBar).getControl() : null);
+		if( SWTEnvironment.getInstance().getAppearance() != null ) {
+			SWTEnvironment.getInstance().getAppearance().applyControlTheme(this.getControl());
+		}
 	}
 
 	public void open() {
+		if( SWTEnvironment.getInstance().getAppearance() != null ) {
+			SWTEnvironment.getInstance().getAppearance().applyControlTheme(this.getControl());
+		}
 		this.getControl().open();
 	}
 

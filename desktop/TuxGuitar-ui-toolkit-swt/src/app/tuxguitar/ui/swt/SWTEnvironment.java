@@ -5,6 +5,7 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.ToolItem;
+import app.tuxguitar.ui.swt.appearance.SWTAppearance;
 import app.tuxguitar.ui.swt.widget.SWTCustomKnob;
 import app.tuxguitar.ui.swt.widget.SWTCustomScale;
 import app.tuxguitar.ui.swt.widget.SWTDropDownSelect;
@@ -22,6 +23,7 @@ public class SWTEnvironment {
 	private static SWTEnvironment instance;
 
 	private Display display;
+	private SWTAppearance appearance;
 
 	private String defaultFontName;
 	private String knobAlternative;
@@ -45,6 +47,15 @@ public class SWTEnvironment {
 
 	public void start(Display display) {
 		this.display = display;
+	}
+
+	public void start(Display display, SWTAppearance appearance) {
+		this.display = display;
+		this.appearance = appearance;
+	}
+
+	public SWTAppearance getAppearance() {
+		return this.appearance;
 	}
 
 	public String getDefaultFontName() {

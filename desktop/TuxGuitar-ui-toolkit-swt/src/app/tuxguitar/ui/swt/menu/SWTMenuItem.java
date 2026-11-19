@@ -51,6 +51,10 @@ public class SWTMenuItem extends SWTEventReceiver<MenuItem> implements UIMenuIte
 			textWithAccelerator += "\t" + accelerator;
 		}
 		this.getControl().setText(textWithAccelerator);
+		if( (this.parent.getControl().getStyle() & org.eclipse.swt.SWT.BAR) != 0 && app.tuxguitar.ui.swt.SWTEnvironment.getInstance().getAppearance() != null ) {
+			app.tuxguitar.ui.swt.appearance.SWTAppearance appearance = app.tuxguitar.ui.swt.SWTEnvironment.getInstance().getAppearance();
+			appearance.applyWin32MenuBarTheme(this.parent.getControl().getShell(), appearance.isDarkMode());
+		}
 	}
 
 	public UIKeyCombination getKeyCombination() {
