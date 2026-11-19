@@ -1,0 +1,158 @@
+name: Windows Dark Mode Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 2.1.1-dark)'
+        required: true
+        default: '2.1.1-dark'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve version and tag
+        id: meta
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "push" -and "${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+            $ver = $tag -replace '^v', ''
+          } else {
+            $raw = "${{ github.event.inputs.version }}".Trim()
+            if ([string]::IsNullOrWhiteSpace($raw)) { $raw = "2.1.1-dark" }
+            $ver = $raw -replace '^v', ''
+            $tag = "v$ver"
+          }
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Building version=$ver tag=$tag"
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Download and install Eclipse SWT 4.37 (win32-x86_64)
+        shell: pwsh
+        run: |
+          $swtZip = "swt-4.37-win32-win32-x86_64.zip"
+          $swtUrl = "https://archive.eclipse.org/eclipse/downloads/drops4/R-4.37-202509050730/$swtZip"
+          Invoke-WebRequest -Uri $swtUrl -OutFile $swtZip
+          Expand-Archive -Path $swtZip -DestinationPath "swt-4.37" -Force
+          mvn --batch-mode install:install-file `
+            "-Dfile=swt-4.37/swt.jar" `
+            "-DgroupId=org.eclipse.swt" `
+            "-DartifactId=org.eclipse.swt.win32.win32" `
+            "-Dpackaging=jar" `
+            "-Dversion=4.37"
+
+      - name: Build TuxGuitar Windows SWT x86_64
+        shell: pwsh
+        working-directory: desktop/build-scripts/tuxguitar-windows-swt-x86_64
+        run: |
+          mvn --batch-mode -e clean package
+          $bundle = "target/tuxguitar-9.99-SNAPSHOT-windows-swt-x86_64"
+          if (-not (Test-Path "$bundle/tuxguitar.exe")) { throw "Missing tuxguitar.exe in $bundle" }
+          if (-not (Get-ChildItem "$bundle/lib/swt-win32-*.dll")) { throw "Missing extracted SWT DLLs in $bundle/lib" }
+
+      - name: Bundle self-contained Java 21 JRE via jlink
+        shell: pwsh
+        run: |
+          $bundle = Join-Path (Get-Location) "desktop\build-scripts\tuxguitar-windows-swt-x86_64\target\tuxguitar-9.99-SNAPSHOT-windows-swt-x86_64"
+          $jreOut = Join-Path $bundle "jre"
+          if (Test-Path $jreOut) { Remove-Item -Recurse -Force $jreOut }
+          & "$env:JAVA_HOME\bin\jlink.exe" `
+            --add-modules java.se,jdk.charsets,jdk.crypto.ec,jdk.crypto.mscapi,jdk.localedata,jdk.unsupported,jdk.zipfs `
+            --strip-debug `
+            --no-man-pages `
+            --no-header-files `
+            --compress=zip-6 `
+            --output $jreOut
+          if ($LASTEXITCODE -ne 0) { throw "jlink failed with exit code $LASTEXITCODE" }
+          if (-not (Test-Path "$jreOut\bin\javaw.exe")) { throw "Missing javaw.exe in bundled JRE" }
+          if (-not (Test-Path "$jreOut\bin\java.exe")) { throw "Missing java.exe in bundled JRE" }
+
+      - name: Create Portable ZIP and Windows Setup EXE
+        shell: pwsh
+        run: |
+          $ver = "${{ steps.meta.outputs.version }}"
+          $root = (Get-Location).Path
+          $bundle = Join-Path $root "desktop\build-scripts\tuxguitar-windows-swt-x86_64\target\tuxguitar-9.99-SNAPSHOT-windows-swt-x86_64"
+          $outDir = Join-Path $root "release-out"
+          $zipStage = Join-Path $root "zip-stage\tuxguitar-$ver-windows-swt-x86_64"
+
+          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+          New-Item -ItemType Directory -Path (Split-Path $zipStage -Parent) -Force | Out-Null
+          Copy-Item -Path $bundle -Destination $zipStage -Recurse
+
+          $zipFile = Join-Path $outDir "tuxguitar-$ver-windows-swt-x86_64-portable.zip"
+          7z a -tzip -mx=7 $zipFile $zipStage
+          if ($LASTEXITCODE -ne 0) { throw "7z failed with exit code $LASTEXITCODE" }
+
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup ISCC.exe not found" }
+
+          $issFile = Join-Path $root "desktop\build-scripts\tuxguitar-windows-swt-x86_64-installer\src\innosetup\tuxguitar.iss"
+          & $iscc `
+            "/DMyAppVersion=$ver" `
+            "/DBundleDir=$bundle" `
+            "/DOutputDir=$outDir" `
+            "/DOutputBaseFilename=tuxguitar-$ver-windows-swt-x86_64-setup" `
+            $issFile
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+
+          Get-ChildItem $outDir | Format-Table Name, Length
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tuxguitar-${{ steps.meta.outputs.version }}-windows-swt-x86_64
+          path: release-out/*
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $ver = "${{ steps.meta.outputs.version }}"
+          $setupExe = "release-out\tuxguitar-$ver-windows-swt-x86_64-setup.exe"
+          $portableZip = "release-out\tuxguitar-$ver-windows-swt-x86_64-portable.zip"
+
+          $notes = @(
+            "## TuxGuitar $ver (Windows Dark Mode)",
+            "",
+            "- **Installer:** ``tuxguitar-$ver-windows-swt-x86_64-setup.exe`` (inkl. Java 21 Runtime, Startmenue-Eintrag, optionale Dateizuordnung)",
+            "- **Portable:** ``tuxguitar-$ver-windows-swt-x86_64-portable.zip`` (entpacken und ``tuxguitar.exe`` starten, inkl. Java 21 Runtime)",
+            "",
+            "> **Hinweis zu Windows SmartScreen:** Da der Installer nicht kostenpflichtig signiert ist, kann Windows beim ersten Start eine Warnung anzeigen (*Weitere Informationen -> Trotzdem ausfuehren*)."
+          ) -join "`n"
+
+          $exists = $false
+          gh release view $tag 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) { $exists = $true }
+
+          if ($exists) {
+            gh release upload $tag $setupExe $portableZip --clobber
+          } else {
+            gh release create $tag $setupExe $portableZip `
+              --title "TuxGuitar $ver (Windows Dark Mode)" `
+              --notes $notes
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh release failed with exit code $LASTEXITCODE" }
